@@ -1,0 +1,8 @@
+mmh3
+fastapi
+uvicorn
+colorama
+requests
+dnspython
+python-nmap
+beautifulsoup4
