@@ -1,2 +1,3 @@
 # Pycache files
-pycache/
+__pycache__/
+*.json
