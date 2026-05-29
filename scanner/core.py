@@ -8,6 +8,7 @@ from scanner.brute import brute_force_dirs
 from scanner.vuln import match_vulnerabilities
 from scanner.subdomains import enumerate_subdomains
 from scanner.web import http_fingerprint, tls_fingerprint
+from scanner.email_audit import audit_email_infrastructure
 from scanner.enrich import resolve_dns, tech_fusion, is_wildcard
 
 # Import UI presentation layers
@@ -117,6 +118,20 @@ def run_recon(domain: str, threads: int = 20, wordlist: str or list = None, stat
         subdomains.append(domain)
 
     print(f"{GOOD} Found {Fore.LIGHTGREEN_EX}{len(subdomains)}{Fore.RESET} active target hosts to analyze.")
+
+    print(f"{INFO} Analyzing domain trust hierarchies for corporate mail spoofing pathways...")
+    email_report = audit_email_infrastructure(domain)
+
+    if email_report["spoofable"]:
+        safe_print(f"\t{STEP} {ALERT} {Fore.RED}Corporate Mail Layer Spoofable! Severity Status: [{email_report['severity']}]")
+        for verdict in email_report["verdicts"]:
+            safe_print(f"\t{STEP} {Fore.YELLOW}Vector: {verdict['issue']}{Fore.RESET}")
+            
+        if email_report["lookalike_suggestions"]:
+            safe_print(f"\t{STEP} {Fore.LIGHTBLUE_EX}Deceptive Homoglyph Lookalikes Generated for Campaigns:")
+            for variant in email_report["lookalike_suggestions"]:
+                safe_print(f"\t{STEP} Visual: {variant['visual_spoof']} ({Fore.LIGHTBLACK_EX}{variant['punycode_target']}{Fore.RESET})")
+
     print(f"{INFO} Spawning non-blocking task runner group ({threads} concurrent workers)...\n" + f"{Fore.LIGHTBLACK_EX}─" * 70)
 
     scanner = PortScanner()
@@ -138,5 +153,8 @@ def run_recon(domain: str, threads: int = 20, wordlist: str or list = None, stat
                     safe_print(f"{WARN} Runtime exception encountered scanning target {Fore.RED}{host}{Fore.RESET}: {e}")
     except KeyboardInterrupt:
         safe_print(f"\n{WARN} {Fore.RED}Scan aborted by user! Saving partial results compiled so far...")
+
+    if email_report:
+        findings.append({"host": domain, "email_audit": email_report})
 
     return findings
