@@ -5,6 +5,7 @@ from colorama import Fore
 from scanner.ports import PortScanner
 from scanner.protocols import grab_banner
 from scanner.brute import brute_force_dirs
+from scanner.geo_map import locate_ip_asset
 from scanner.vuln import match_vulnerabilities
 from scanner.subdomains import enumerate_subdomains
 from scanner.web import http_fingerprint, tls_fingerprint
@@ -20,6 +21,11 @@ def scan_host(host: str, scanner: PortScanner, wordlist: str or list = None, sta
 
     dns_records = resolve_dns(host)
     ip_address = dns_records["A"][0] if dns_records.get("A") else host
+
+    geo_intel = locate_ip_asset(ip_address)
+    if "country" in geo_intel:
+        safe_print(f"\t{STEP} Physical Footprint Located: [{Fore.LIGHTGREEN_EX}{geo_intel['city']}, {geo_intel['country']}{Fore.RESET}] "
+                   f"Coordinates: {geo_intel['latitude']},{geo_intel['longitude']} | Provider: {Fore.LIGHTMAGENTA_EX}{geo_intel['provider']}{Fore.RESET}")
 
     nmap_ports_raw = scanner.scan(host)
     ports = []
@@ -93,6 +99,7 @@ def scan_host(host: str, scanner: PortScanner, wordlist: str or list = None, sta
     return {
         "host": host,
         "ip": ip_address,
+        "geo_location": geo_intel,
         "dns": dns_records,
         "ports": nmap_ports_raw,
         "non_http_banners": non_http_services,

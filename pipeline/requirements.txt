@@ -3,6 +3,8 @@ fastapi
 uvicorn
 colorama
 requests
+maxminddb
+packaging 
 dnspython
 python-nmap
 beautifulsoup4
